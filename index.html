@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+    <style>
+        .countries {
+            fill: #ededed;
+        }
+  
+        .border {
+            stroke: #1c1c1c;
+            stroke-width: 1px;
+            fill: none;
+        }
+
+        #colorLegend {
+			margin: 20px;
+		}
+
+        .legend span {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div>
+          <h2> World Map of the Happiness Score </h2>
+        </div>
+        <div id="mapCanvas">
+          <svg id="map" width="700" height="525"></svg>
+        </div>
+        <div>
+            <svg id="colorLegend" height="80" width="500"></svg>
+        </div>
+    </div>
+    <script>
+        // basic operations to get the svg and set margins
+        // append g for inner map
+        const map = d3.select("#map");
+        const width = parseInt(map.attr("width"));
+        const height = parseInt(map.attr("height"));
+        const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+        const mapWidth = width - margin.left - margin.right;
+        const mapHeight = height - margin.top - margin.bottom;
+        const innerMap = map.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        
+        // request data asynchronously
+        const requestData = async function () {
+            const happiness = await d3.csv("./joined.csv")
+            const world = await d3.json("./world.json");
+            const code = await d3.json("./countryCode.json");
+           
+            // create a Map to store country codes as keys with country names as values
+            var code_country_map = new Map();
+            code.forEach(country => {
+                code_country_map.set(country['country-code'], country['name']);
+            });
+
+            // create a Map to record with country names as key and happiness score as value
+            var countryHappyMap = new Map();
+            
+            // array of all happiness scores for color domain later
+            var happinessArr = [];
+
+            // get max and min happiness score and put keys and values into the Map
+            happiness.forEach(element => {
+                countryHappyMap.set(element['Country name'], parseFloat(element["HappinessScore"]));
+                happinessArr.push(parseFloat(element["HappinessScore"]));
+            })
+
+            // get feature, mesh, and projection
+            var countries = topojson.feature(world, world.objects.countries);
+            world.objects.countries.geometries = world.objects.countries.geometries.filter(country => countryHappyMap.has(code_country_map.get(country.id)));
+            var countriesMesh = topojson.mesh(world, world.objects.countries);
+            var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], countries);
+            
+            // create path based on projection
+            var path = d3.geoPath().projection(projection);
+
+            // draw countries on the map
+            innerMap.selectAll("path.countries").data(countries.features)
+                .join("path")
+                .attr("class", "countries")
+                .attr("d", path)
+                // .on('mouseover', mouseEntersPlot)
+                // .on('mouseout', mouseLeavesPlot)
+
+            // draw the border of each country
+            innerMap.append("path").datum(countriesMesh)
+                .attr("class", "border")
+                .attr("d", path);
+
+            // let tooltipWidth = 200;
+            // let tooltipHeight = 100;
+
+            // let momesh = innerMap.append("path")
+            //     .attr("class", "mouseover border")
+            //     .attr("d", "");
+            
+            // let tooltip = innerMap.append("g")
+            //     .attr("class", "tooltip")
+            //     .attr("visibility", "hidden");
+            // tooltip.append("rect")
+            //     .attr("fill", "black")
+            //     .attr("opacity", 0.9)
+            //     .attr("x", -tooltipWidth / 2.0)
+            //     .attr("y", 0)
+            //     .attr("width",tooltipWidth)
+            //     .attr("height",tooltipHeight)
+            // let txt = tooltip.append("text")
+            //     .attr("class", "countryName")
+            //     .attr("fill", "white")
+            //     .attr("text-anchor", "middle")
+            //     .attr("alignment-baseline", "hanging")
+            //     .attr("x", 0)
+            //     .attr("y", 20);
+            // let txt2 = tooltip.append("text")
+            //     .attr("class", "countryInfo")
+            //     .attr("fill", "white")
+            //     .attr("text-anchor", "middle")
+            //     .attr("alignment-baseline", "hanging")
+            //     .attr("x", 0)
+            //     .attr("y", 45);
+
+            // create color scale
+            const colorArr = ['#d4e6ff', '#aacdff', '#7fb3ff', '#549aff', '#2a81ff', '#0068fe', '#0056d3', '#0045a8'];
+			const colorScale = d3.scaleQuantile().domain(happinessArr).range(colorArr);
+			
+            // draw legend of the map
+			drawLegend(d3.select('#colorLegend'), colorScale);
+
+            // fill each country with different colors based on happiness score
+            innerMap.selectAll(".countries")
+                .style("fill", d => countryHappyMap.has(code_country_map.get(d.id)) ? colorScale(countryHappyMap.get(code_country_map.get(d.id))) : null);
+
+            // d3.selectAll(".countries").on("mouseenter", mouseEntersPlot);
+            // d3.selectAll(".countries").on("mouseout", mouseLeavesPlot);
+            
+            // function mouseEntersPlot() {
+            //     let country = d3.select(this);
+            //     if (code_country_map.has(country.datum().id)) {
+            //     tooltip.style("visibility", "visible");
+            //     country
+            //         .attr("stroke", "black")
+            //         .attr("stroke-width", 3)
+            //         .style("opacity", 0.5)
+            //     }
+
+            //     let countryID = country.datum().id;
+            //     let countryName = code_country_map.get(countryID);
+            //     txt.text(countryName);
+
+            //     if (countryHappyMap.has(countryName)) {
+            //         txt2.text("Happiness Score: " + countryHappyMap.get(countryName));
+            //     }
+            //     let bounds = path.bounds(country.datum());
+            //     let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
+            //     let yPos = bounds[1][1] - 15;
+            //     tooltip.attr("transform", `translate(${xPos},${yPos})`);
+            //     var mo = topojson.mesh(world, world.objects.countries, function (a, b) { return a.id === countryID || b.id === countryID; });
+            //     momesh.datum(mo).attr("d", path)
+            // }
+
+            // function mouseLeavesPlot() {
+            //     tooltip.style("visibility", "hidden");
+            //     let country = d3.select(this);
+
+            //     if (code_country_map.has(country.datum().id)) {
+            //     country.attr("stroke", "black")
+            //         .attr("stroke-width", 1)
+            //         .style("opacity", 1)
+            //     }
+            //     momesh.attr("d", "");
+            // }
+
+            
+
+        }
+        requestData();
+        
+        // function of drawing the legend
+        function drawLegend(legend, legendColorScale) {
+			const legendWidth = legend.attr('width');
+			const legendHeight = legend.attr('height');
+			const legendMinMax = d3.extent(legendColorScale.domain());
+			const barHeight = 40;
+			const stepSize = 4;
+
+			// Extend the minmax by 1 in either direction to expose more features
+			// create pixel and bar scale
+			const pixelScale = d3.scaleLinear()
+				                .domain([0, legendWidth - 40])
+				                .range([legendMinMax[0], legendMinMax[1]]);
+			const barScale = d3.scaleLinear()
+                                .domain([legendMinMax[0], legendMinMax[1]])
+                                .range([0, legendWidth - 40]);
+			const barAxis = d3.axisBottom(barScale);
+
+			// Check if we're using a quantile scale
+			if (legendColorScale.hasOwnProperty('quantiles')) {
+
+				// Use the quantile breakpoints plus the min and max of the scale as tick values
+				barAxis.tickValues(legendColorScale.quantiles().concat(legendMinMax));
+			}
+			legend.append('g')
+				.attr('class', 'colorbar axis')
+				.attr('transform', 'translate(' + 20 + ',' + (barHeight + 5) + ')')
+				.call(barAxis);
+
+			// Draw rects of color down the bar
+			let bar = legend.append('g').attr('transform', 'translate(' + 20 + ',' + 0 + ')');
+			for (let i = 0; i < legendWidth - 40; i = i + stepSize) {
+				bar.append('rect')
+					.attr('x', i)
+					.attr('y', 0)
+					.attr('width', stepSize)
+					.attr('height', barHeight)
+					.style('fill', legendColorScale(pixelScale(i))); // pixels => countData => color
+			}
+		}
+    </script>
+</body>
+</html>
