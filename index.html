@@ -50,9 +50,9 @@
         
         // request data asynchronously
         const requestData = async function () {
-            const happiness = await d3.csv("./joined.csv")
-            const world = await d3.json("./world.json");
-            const code = await d3.json("./countryCode.json");
+            const happiness = await d3.csv("./data/joined.csv")
+            const world = await d3.json("./data/world.json");
+            const code = await d3.json("./data/countryCode.json");
            
             // create a Map to store country codes as keys with country names as values
             var code_country_map = new Map();
@@ -181,7 +181,7 @@
 
         }
         requestData();
-        
+
         // function of drawing the legend
         function drawLegend(legend, legendColorScale) {
 			const legendWidth = legend.attr('width');
