@@ -5,6 +5,10 @@
     <script src="https://d3js.org/topojson.v3.min.js"></script>
     <script src="https://d3js.org/d3-collection.v1.min.js"></script>
     <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
         .countries {
             fill: #ededed;
         }
@@ -15,6 +19,12 @@
             fill: none;
         }
 
+        .countryInfo {
+            fill: white;
+            text-anchor: middle;
+            align-items: hanging;
+        }
+
         #colorLegend {
 			margin: 20px;
 		}
@@ -22,13 +32,51 @@
         .legend span {
             margin-right: 10px;
         }
+
+        .custom-select {
+            width: 200px;
+            position: relative;          
+            margin-bottom: 30px;
+        }
+
+        .bar-title {
+            font-size: 20px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        #regionbar {
+            height: 40px;
+            font-size: 15px;
+        }
+
+        .select-selected {
+            background-color: DodgerBlue;
+        }
     </style>
 </head>
 <body>
     <div id="container">
         <div>
-          <h2> World Map of the Happiness Score </h2>
+          <h2> World Map of the Happiness Score &#128516</h2>
         </div>
+        <div class="custom-select" style="width:200px;">
+            <p class="bar-title">World Region:</p>
+            <select id="regionbar">
+                <option value="all">View All</option>
+                <option value="North America">North America</option>
+                <option value="Latin America and Caribbean">Latin America and Caribbean</option>
+                <option value="Sub-Saharan Africa">Sub-Saharan Africa</option>
+                <option value="Middle East and Northern Africa">Middle East and Northern Africa</option>
+                <option value="Eastern Asia">Eastern Asia</option>
+                <option value="Southeastern Asia">Southeastern Asia</option>
+                <option value="Central and Eastern Europe">Central and Eastern Europe</option>
+                <option value="Western Europe">Western Europe</option>
+                <option value="Australia and New Zealand">Australia and New Zealand</option>
+            </select>
+        </div>
+
         <div id="mapCanvas">
           <svg id="map" width="700" height="525"></svg>
         </div>
@@ -53,11 +101,23 @@
             const happiness = await d3.csv("./data/joined.csv")
             const world = await d3.json("./data/world.json");
             const code = await d3.json("./data/countryCode.json");
-           
+            console.log(happiness);
+            console.log(code);
+        
+
             // create a Map to store country codes as keys with country names as values
             var code_country_map = new Map();
             code.forEach(country => {
                 code_country_map.set(country['country-code'], country['name']);
+            });
+
+            // create a Map to store country regions as keys with country names Set as value
+            var region_countries_map = new Map();
+            happiness.forEach(d => {
+                if (!region_countries_map.has(d.Region)) {
+                    region_countries_map.set(d.Region, new Set());
+                } 
+                region_countries_map.get(d.Region).add(d['Country name']);
             });
 
             // create a Map to record with country names as key and happiness score as value
@@ -85,49 +145,59 @@
             innerMap.selectAll("path.countries").data(countries.features)
                 .join("path")
                 .attr("class", "countries")
-                .attr("d", path)
-                // .on('mouseover', mouseEntersPlot)
-                // .on('mouseout', mouseLeavesPlot)
+                .attr("d", path);
 
             // draw the border of each country
             innerMap.append("path").datum(countriesMesh)
                 .attr("class", "border")
                 .attr("d", path);
 
-            // let tooltipWidth = 200;
-            // let tooltipHeight = 100;
+            // create tooltip and country information text
+            let tooltipWidth = 250;
+            let tooltipHeight = 150;
 
-            // let momesh = innerMap.append("path")
-            //     .attr("class", "mouseover border")
-            //     .attr("d", "");
+            let momesh = innerMap.append("path")
+                .attr("class", "mouseover border");
             
-            // let tooltip = innerMap.append("g")
-            //     .attr("class", "tooltip")
-            //     .attr("visibility", "hidden");
-            // tooltip.append("rect")
-            //     .attr("fill", "black")
-            //     .attr("opacity", 0.9)
-            //     .attr("x", -tooltipWidth / 2.0)
-            //     .attr("y", 0)
-            //     .attr("width",tooltipWidth)
-            //     .attr("height",tooltipHeight)
-            // let txt = tooltip.append("text")
-            //     .attr("class", "countryName")
-            //     .attr("fill", "white")
-            //     .attr("text-anchor", "middle")
-            //     .attr("alignment-baseline", "hanging")
-            //     .attr("x", 0)
-            //     .attr("y", 20);
-            // let txt2 = tooltip.append("text")
-            //     .attr("class", "countryInfo")
-            //     .attr("fill", "white")
-            //     .attr("text-anchor", "middle")
-            //     .attr("alignment-baseline", "hanging")
-            //     .attr("x", 0)
-            //     .attr("y", 45);
+            let tooltip = innerMap.append("g")
+                .attr("class", "tooltip")
+                .attr("visibility", "hidden");
+            
+            tooltip.append("rect")
+                .attr("x", -tooltipWidth / 2.0)
+                .attr("y", 0)
+                .attr("width",tooltipWidth)
+                .attr("height",tooltipHeight)
+                .attr("opacity", 0.9)
+                .attr("fill", "#787A91")
+
+            let txt = tooltip.append("text")
+                .attr("class", "countryInfo")
+                .attr("x", 0)
+                .attr("y", 20);
+        
+            let txt2 = tooltip.append("text")
+                .attr("class", "countryInfo")
+                .attr("x", 0)
+                .attr("y", 45);
+
+            let txt3 = tooltip.append("text")
+                .attr("class", "countryInfo")
+                .attr("x", 0)
+                .attr("y", 70);
+
+            let txt4 = tooltip.append("text")
+                .attr("class", "countryInfo")
+                .attr("x", 0)
+                .attr("y", 95);
+
+            let txt5 = tooltip.append("text")
+                .attr("class", "countryInfo")
+                .attr("x", 0)
+                .attr("y", 120);
 
             // create color scale
-            const colorArr = ['#d4e6ff', '#aacdff', '#7fb3ff', '#549aff', '#2a81ff', '#0068fe', '#0056d3', '#0045a8'];
+            const colorArr = ['#FDF6F0', '#FBFFE2', '#FFF9B6', '#FFE699', '#FFD07F', '#FDA65D', '#FF8243', '#E26A2C'];
 			const colorScale = d3.scaleQuantile().domain(happinessArr).range(colorArr);
 			
             // draw legend of the map
@@ -135,50 +205,80 @@
 
             // fill each country with different colors based on happiness score
             innerMap.selectAll(".countries")
-                .style("fill", d => countryHappyMap.has(code_country_map.get(d.id)) ? colorScale(countryHappyMap.get(code_country_map.get(d.id))) : null);
-
-            // d3.selectAll(".countries").on("mouseenter", mouseEntersPlot);
-            // d3.selectAll(".countries").on("mouseout", mouseLeavesPlot);
+                .style("fill", d =>  colorScale(countryHappyMap.get(code_country_map.get(d.id))));
             
-            // function mouseEntersPlot() {
-            //     let country = d3.select(this);
-            //     if (code_country_map.has(country.datum().id)) {
-            //     tooltip.style("visibility", "visible");
-            //     country
-            //         .attr("stroke", "black")
-            //         .attr("stroke-width", 3)
-            //         .style("opacity", 0.5)
-            //     }
-
-            //     let countryID = country.datum().id;
-            //     let countryName = code_country_map.get(countryID);
-            //     txt.text(countryName);
-
-            //     if (countryHappyMap.has(countryName)) {
-            //         txt2.text("Happiness Score: " + countryHappyMap.get(countryName));
-            //     }
-            //     let bounds = path.bounds(country.datum());
-            //     let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
-            //     let yPos = bounds[1][1] - 15;
-            //     tooltip.attr("transform", `translate(${xPos},${yPos})`);
-            //     var mo = topojson.mesh(world, world.objects.countries, function (a, b) { return a.id === countryID || b.id === countryID; });
-            //     momesh.datum(mo).attr("d", path)
-            // }
-
-            // function mouseLeavesPlot() {
-            //     tooltip.style("visibility", "hidden");
-            //     let country = d3.select(this);
-
-            //     if (code_country_map.has(country.datum().id)) {
-            //     country.attr("stroke", "black")
-            //         .attr("stroke-width", 1)
-            //         .style("opacity", 1)
-            //     }
-            //     momesh.attr("d", "");
-            // }
-
+            // update function for drop down bar
+            var updateMap = function(region) {
+                if (region === "all") {
+                    innerMap.selectAll(".countries")
+                        .style("fill", d => colorScale(countryHappyMap.get(code_country_map.get(d.id))));
+                } else {
+                    innerMap.selectAll(".countries")
+                        .style("fill", d => (region_countries_map.get(region).has(code_country_map.get(d.id))) ? 
+                        colorScale(countryHappyMap.get(code_country_map.get(d.id))) : null);
+                } 
+            }
             
+            // fill a specific region based on the drop down bar selection
+            d3.select("#regionbar").on("change", function() {
+                var newRegion = d3.select(this).property('value');
+                updateMap(newRegion);
+            });
 
+            // mouse over and out from a specific country and get the tooltip
+            d3.selectAll(".countries").on("mouseenter", mouseEnters);
+            d3.selectAll(".countries").on("mouseout", mouseLeaves);
+            
+            // mouse enter function
+            function mouseEnters() {
+                let country = d3.select(this);
+                if (countryHappyMap.has(code_country_map.get(country.datum().id))) {
+                    tooltip.style("visibility", "visible");
+                    country.attr("stroke", "black")
+                           .attr("stroke-width", 3)
+                           .style("opacity", 0.5)
+                }
+                let countryName = code_country_map.get(country.datum().id);
+
+                // get information of mouse-over country
+                if (countryHappyMap.has(countryName)) {
+                    var life;
+                    var socialSupport;
+                    var freedom;
+                    happiness.forEach(d => {
+                        if (d['Country name'] == countryName) {
+                            life = d['Healthy life expectancy'];
+                            socialSupport = d['Social support']
+                            freedom = d['Freedom to make life choices'];
+                        }
+                    });
+                    txt.text(countryName);
+                    txt2.text("Happiness Score: " + countryHappyMap.get(countryName))
+                    txt3.text("Life Expectancy: " + life);
+                    txt4.text("Social Support: " + socialSupport);
+                    txt5.text("Freedom to make life choices: " + freedom);
+                }
+                
+                let bounds = path.bounds(country.datum());
+                let xPos = (bounds[0][0] + bounds[1][0]) / 3.0;
+                let yPos = bounds[1][1];
+                tooltip.attr("transform", `translate(${xPos},${yPos})`);
+                var mo = topojson.mesh(world, world.objects.countries, function (a, b) { return a.id === country.datum().id || b.id === country.datum().id; });
+                momesh.datum(mo).attr("d", path);
+            }
+
+            // mouse out function 
+            function mouseLeaves() {
+                tooltip.style("visibility", "hidden");
+                let country = d3.select(this);
+
+                if (countryHappyMap.has(code_country_map.get(country.datum().id))) {
+                    country.attr("stroke", "black")
+                           .attr("stroke-width", 1)
+                           .style("opacity", 1)
+                }
+                // momesh.attr("d", "");
+            }
         }
         requestData();
 
