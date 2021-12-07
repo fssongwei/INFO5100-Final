@@ -7,7 +7,7 @@
     <style>
       body {
         font-family: Arial, Helvetica, sans-serif;
-        background-color: #fffff1;
+        background-color: #d2eafc;
         padding: 20px 55px 55px 55px;
       }
 
@@ -217,9 +217,9 @@
 
         // create tooltip and country information text
         let momesh = innerMap.append("path").attr("class", "mouseover border");
-        let tooltipWidth = 280;
-        let tooltipHeight = 150;
-        const generateTooltip = (parent) => {
+        let tooltipWidth = 300;
+        let tooltipHeight = 90;
+        const generateTooltip = (parent, height) => {
           let tooltip = parent
             .append("g")
             .attr("class", "tooltip")
@@ -230,45 +230,50 @@
             .attr("x", -tooltipWidth / 2.0)
             .attr("y", 0)
             .attr("width", tooltipWidth)
-            .attr("height", tooltipHeight)
+            .attr("height", height || tooltipHeight)
             .attr("opacity", 0.9)
             .attr("fill", "#787A91");
 
           let txt = tooltip
             .append("text")
             .attr("class", "countryInfo")
+            .style("font-size", "16px")
             .attr("x", 0)
             .attr("y", 20);
 
           let txt2 = tooltip
             .append("text")
             .attr("class", "countryInfo")
+            .style("font-size", "16px")
             .attr("x", 0)
             .attr("y", 45);
 
           let txt3 = tooltip
             .append("text")
             .attr("class", "countryInfo")
+            .style("font-size", "16px")
             .attr("x", 0)
             .attr("y", 70);
 
           let txt4 = tooltip
             .append("text")
             .attr("class", "countryInfo")
+            .style("font-size", "16px")
             .attr("x", 0)
             .attr("y", 95);
 
           let txt5 = tooltip
             .append("text")
             .attr("class", "countryInfo")
+            .style("font-size", "16px")
             .attr("x", 0)
             .attr("y", 120);
 
           return { tooltip, txt, txt2, txt3, txt4, txt5 };
         };
 
-        let { tooltip, txt, txt2, txt3, txt4, txt5 } =
-          generateTooltip(innerMap);
+        let tooltipObj = generateTooltip(innerMap, 150);
+        let { tooltip, txt, txt2, txt3, txt4, txt5 } = tooltipObj;
 
         // create color scale
         const colorArr = [
@@ -328,24 +333,19 @@
 
         // showTooltip
         const displayTooltipData = (
-          tooltip,
-          txt,
-          txt2,
-          txt3,
-          txt4,
-          txt5,
-          countryName,
-          happinessScore,
-          life,
-          socialSupport,
-          freedom
+          tooltipObj,
+          text1,
+          text2,
+          text3,
+          text4,
+          text5
         ) => {
-          tooltip.style("visibility", "visible");
-          txt.text(countryName);
-          txt2.text("Happiness Score: " + happinessScore);
-          txt3.text("Life Expectancy: " + life);
-          txt4.text("Social Support: " + socialSupport);
-          txt5.text("Freedom to make life choices: " + freedom);
+          tooltipObj.tooltip.style("visibility", "visible");
+          if (text1) tooltipObj.txt.text(text1);
+          if (text2) tooltipObj.txt2.text(text2);
+          if (text3) tooltipObj.txt3.text(text3);
+          if (text4) tooltipObj.txt4.text(text4);
+          if (text5) tooltipObj.txt5.text(text5);
         };
 
         // mouse enter function
@@ -374,17 +374,12 @@
             });
             happinessScore = countryHappyMap.get(countryName);
             displayTooltipData(
-              tooltip,
-              txt,
-              txt2,
-              txt3,
-              txt4,
-              txt5,
+              tooltipObj,
               countryName,
-              happinessScore,
-              life,
-              socialSupport,
-              freedom
+              "Happiness Score: " + happinessScore,
+              "Life Expectancy: " + life,
+              "Social Support: " + socialSupport,
+              "Freedom to make life choices: " + freedom
             );
             let plotCircle = d3.select(
               `.scatter-circle.${countryName.replace(" ", "_")}`
@@ -421,7 +416,9 @@
               .style("opacity", 1);
           }
           plotTooltip.style("visibility", "hidden");
-          d3.selectAll(".scatter-circle").attr("stroke-width", 0).attr("opacity", 0.4);
+          d3.selectAll(".scatter-circle")
+            .attr("stroke-width", 0)
+            .attr("opacity", 0.4);
           // momesh.attr("d", "");
         }
 
@@ -438,8 +435,6 @@
           .join("option")
           .text((d) => d)
           .attr("value", (d) => d);
-        console.log(countryHappyMap);
-        console.log(region_countries_map);
 
         // Circles Container
         let circleGroup = plot.append("g");
@@ -558,17 +553,12 @@
         });
 
         // Generate Tooltip for scatter plot
-        let {
-          tooltip: plotTooltip,
-          txt: plotTxt,
-          txt2: plotTxt2,
-          txt3: plotTxt3,
-          txt4: plotTxt4,
-          txt5: plotTxt5,
-        } = generateTooltip(plot);
+        const plotTooltipObj = generateTooltip(plot);
+        let { tooltip: plotTooltip } = plotTooltipObj;
 
         // Mouseevent Listener for Circles
         function addListenersToCircles() {
+          let alcoholType = alcoholTypeSelector.property("value");
           circleGroup
             .selectAll("circle")
             .on("mouseenter mousetriger", function (event, d) {
@@ -576,31 +566,27 @@
               const circle = d3.select(this);
               const cx = parseFloat(circle.attr("cx"));
               const cy = parseFloat(circle.attr("cy"));
-              let xPos = cx + tooltipWidth - 20;
-              let yPos = cy + plotMargin.top + 40;
+              let xPos = cx + tooltipWidth - 60;
+              let yPos = cy + plotMargin.top + 30;
               if (yPos > plotHeight / 2) {
-                yPos = cy - tooltipHeight;
+                yPos = cy - tooltipHeight + 20;
+              }
+
+              if (xPos > (plotWidth + tooltipWidth) / 2) {
+                xPos = cx - 80;
               }
 
               // add border when hover
-              circle.attr("stroke", "steelblue").attr("stroke-width", 3).attr("opacity", 1);
-
-              if (xPos > (plotWidth + tooltipWidth) / 2) {
-                xPos = cx;
-              }
+              circle
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 5)
+                .attr("opacity", 1);
 
               displayTooltipData(
-                plotTooltip,
-                plotTxt,
-                plotTxt2,
-                plotTxt3,
-                plotTxt4,
-                plotTxt5,
+                plotTooltipObj,
                 d["Country name"],
-                d.HappinessScore,
-                d["Healthy life expectancy"],
-                d["Social support"],
-                d["Freedom to make life choices"]
+                "Happiness Score: " + d.HappinessScore,
+                `${alcoholType} Per Capita: ${d[alcoholType + "_PerCapita"]}`
               );
 
               plotTooltip.attr("transform", `translate(${xPos},${yPos})`);
@@ -614,11 +600,18 @@
               }
             });
 
-          circleGroup.selectAll("circle").on("mouseleave", function() {
-            tooltip.style("visibility", "hidden");
+          circleGroup.selectAll("circle").on("mouseleave", function (event, d) {
+            // tooltip.style("visibility", "hidden");
             plotTooltip.style("visibility", "hidden");
             // cancel border when mouseleave
             d3.select(this).attr("stroke-width", 0).attr("opacity", 0.4);
+
+            const mapCountry = innerMap.select(
+              `.${d["Country name"].replace(" ", "_")}`
+            )._groups[0][0];
+            if (mapCountry) {
+              mapCountry.dispatchEvent(new Event("mouseout"));
+            }
           });
         }
       };
