@@ -11,10 +11,6 @@
         padding: 20px 55px 55px 55px;
       }
 
-      svg {
-        background-color: white;
-      }
-
       .header {
         font-size: 32px;
         font-weight: 700;
@@ -77,6 +73,7 @@
       #map,
       #scatterPlot {
         border: 1px solid #bdbdbd;
+        background-color: white;
       }
 
       #scatterPlot {
@@ -424,6 +421,7 @@
               .style("opacity", 1);
           }
           plotTooltip.style("visibility", "hidden");
+          d3.selectAll(".scatter-circle").attr("stroke-width", 0).attr("opacity", 0.4);
           // momesh.attr("d", "");
         }
 
@@ -492,7 +490,8 @@
             .attr("cx", (d) => consumptionScale(d[alcoholType + "_PerCapita"]))
             .attr("cy", (d) => HappinessScale(d.HappinessScore))
             .attr("r", circleRadius)
-            .attr("fill", "#FF99006B")
+            .attr("fill", "#FF9900")
+            .attr("opacity", 0.4)
             .attr("class", (d) => {
               return `scatter-circle ${d["Country name"].replace(" ", "_")}`;
             });
@@ -583,6 +582,9 @@
                 yPos = cy - tooltipHeight;
               }
 
+              // add border when hover
+              circle.attr("stroke", "steelblue").attr("stroke-width", 3).attr("opacity", 1);
+
               if (xPos > (plotWidth + tooltipWidth) / 2) {
                 xPos = cx;
               }
@@ -612,9 +614,11 @@
               }
             });
 
-          circleGroup.selectAll("circle").on("mouseleave", () => {
+          circleGroup.selectAll("circle").on("mouseleave", function() {
             tooltip.style("visibility", "hidden");
             plotTooltip.style("visibility", "hidden");
+            // cancel border when mouseleave
+            d3.select(this).attr("stroke-width", 0).attr("opacity", 0.4);
           });
         }
       };
