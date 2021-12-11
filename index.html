@@ -122,8 +122,8 @@
       </div>
 
       <div id="mapCanvas">
-        <svg id="map" width="700" height="525"></svg>
-        <svg id="scatterPlot" width="650" height="525"></svg>
+        <svg id="map" width="575" height="525"></svg>
+        <svg id="scatterPlot" width="525" height="525"></svg>
       </div>
       <div>
         <p class="bar-title">Legend</p>
@@ -485,7 +485,7 @@
             .attr("cx", (d) => consumptionScale(d[alcoholType + "_PerCapita"]))
             .attr("cy", (d) => HappinessScale(d.HappinessScore))
             .attr("r", circleRadius)
-            .attr("fill", "#FF9900")
+            .attr("fill", "#01A825")
             .attr("opacity", 0.4)
             .attr("class", (d) => {
               return `scatter-circle ${d["Country name"].replace(" ", "_")}`;
